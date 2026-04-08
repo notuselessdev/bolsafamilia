@@ -521,13 +521,13 @@ function WelcomeModal() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    if (!localStorage.getItem("bf-welcome-dismissed")) {
+    if (!sessionStorage.getItem("bf-welcome-dismissed")) {
       setOpen(true);
     }
   }, []);
 
   function dismiss() {
-    localStorage.setItem("bf-welcome-dismissed", "1");
+    sessionStorage.setItem("bf-welcome-dismissed", "1");
     setOpen(false);
   }
 
