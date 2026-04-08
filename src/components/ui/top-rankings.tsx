@@ -64,7 +64,7 @@ export function TopRankings({
       : "Brasil";
 
   return (
-    <div className="bg-slate-900/50 rounded-2xl border border-slate-800 p-4 sm:p-6">
+    <div className="bg-slate-900/50 rounded-2xl border border-slate-800 p-3 sm:p-6">
       <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
         Top Rankings — {scopeLabel}
       </h3>

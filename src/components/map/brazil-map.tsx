@@ -69,7 +69,7 @@ export function BrazilMap({
     <div className="relative w-full">
       <svg
         viewBox="0 0 800 750"
-        className="w-full h-auto"
+        className="w-full h-auto touch-manipulation"
         role="img"
         aria-label="Mapa do Brasil por regiões"
       >
@@ -142,7 +142,7 @@ function RegionDetailMap({
     <div className="relative w-full">
       <svg
         viewBox={regionPaths.viewBox}
-        className="w-full h-auto"
+        className="w-full h-auto touch-manipulation"
         role="img"
         aria-label={`Mapa da região ${region.name}`}
       >
@@ -215,7 +215,7 @@ function MunicipalityDetailMap({
     <div className="relative w-full">
       <svg
         viewBox={pathData.viewBox}
-        className="w-full h-auto"
+        className="w-full h-auto touch-manipulation"
         role="img"
         aria-label={`Mapa dos municípios de ${state.name}`}
       >
@@ -284,22 +284,22 @@ function Tooltip({
   ratio: number;
 }) {
   return (
-    <div className="absolute top-4 right-4 bg-slate-800/95 backdrop-blur-sm border border-slate-600 rounded-xl p-4 min-w-[220px] shadow-2xl">
-      <h3 className="text-white font-semibold text-lg mb-2">{name}</h3>
-      <div className="space-y-1.5 text-sm">
-        <div className="flex justify-between">
+    <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-slate-800/95 backdrop-blur-sm border border-slate-600 rounded-xl p-3 sm:p-4 min-w-[180px] sm:min-w-[220px] shadow-2xl">
+      <h3 className="text-white font-semibold text-sm sm:text-lg mb-1.5 sm:mb-2">{name}</h3>
+      <div className="space-y-1 sm:space-y-1.5 text-xs sm:text-sm">
+        <div className="flex justify-between gap-3">
           <span className="text-slate-400">Bolsa Família</span>
           <span className="text-amber-400 font-medium">
             {bolsaFamilia.toLocaleString("pt-BR")}
           </span>
         </div>
-        <div className="flex justify-between">
+        <div className="flex justify-between gap-3">
           <span className="text-slate-400">Trabalhadores</span>
           <span className="text-blue-400 font-medium">
             {workers.toLocaleString("pt-BR")}
           </span>
         </div>
-        <div className="border-t border-slate-600 pt-1.5 flex justify-between">
+        <div className="border-t border-slate-600 pt-1 sm:pt-1.5 flex justify-between gap-3">
           <span className="text-slate-400">Razão</span>
           <span className="text-white font-semibold">
             {ratio.toFixed(2)}

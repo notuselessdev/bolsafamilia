@@ -14,13 +14,13 @@ const ACCENT_STYLES = {
 export function SummaryCard({ title, value, subtitle, accent }: SummaryCardProps) {
   const styles = ACCENT_STYLES[accent];
   return (
-    <div className={`rounded-xl border p-5 ${styles}`}>
-      <p className="text-xs font-medium uppercase tracking-wider text-slate-400 mb-1">
+    <div className={`rounded-xl border p-3 sm:p-5 ${styles}`}>
+      <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-400 mb-0.5 sm:mb-1">
         {title}
       </p>
-      <p className="text-2xl font-bold tabular-nums">{value}</p>
+      <p className="text-lg sm:text-2xl font-bold tabular-nums">{value}</p>
       {subtitle && (
-        <p className="text-xs text-slate-500 mt-1">{subtitle}</p>
+        <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 sm:mt-1">{subtitle}</p>
       )}
     </div>
   );

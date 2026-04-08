@@ -86,7 +86,7 @@ export function Dashboard({
   return (
     <>
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm">
+      <nav className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
         <button
           onClick={handleBackToNational}
           className={`transition-colors ${
@@ -148,7 +148,7 @@ export function Dashboard({
       )}
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         {selectedState ? (
           <>
             <SummaryCard
@@ -225,8 +225,8 @@ export function Dashboard({
       )}
 
       {/* Map + sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-slate-900/50 rounded-2xl border border-slate-800 p-4 sm:p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="lg:col-span-2 bg-slate-900/50 rounded-2xl border border-slate-800 p-3 sm:p-6">
           <BrazilMap
             regions={regions}
             statesByRegion={statesByRegion}
@@ -239,12 +239,12 @@ export function Dashboard({
           />
         </div>
 
-        <div className="space-y-6">
-          <div className="bg-slate-900/50 rounded-2xl border border-slate-800 p-4 sm:p-6">
+        <div className="space-y-4 sm:space-y-6">
+          <div className="bg-slate-900/50 rounded-2xl border border-slate-800 p-3 sm:p-6">
             <MapLegend />
           </div>
 
-          <div className="bg-slate-900/50 rounded-2xl border border-slate-800 p-4 sm:p-6">
+          <div className="bg-slate-900/50 rounded-2xl border border-slate-800 p-3 sm:p-6">
             {selectedState ? (
               <MunicipalitiesSidebar
                 municipalities={municipalities}
@@ -414,40 +414,85 @@ function CityDetailPanel({
       : "0.0";
 
   return (
-    <div className="bg-slate-900/50 rounded-2xl border border-slate-800 p-4 sm:p-6 relative">
-      <button
-        onClick={onClose}
-        className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer text-xl leading-none"
-        aria-label="Fechar painel"
+    <>
+      {/* Mobile: bottom sheet overlay */}
+      <div className="sm:hidden fixed inset-0 z-40 bg-black/50" onClick={onClose} />
+      <div
+        className={
+          "sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-700 rounded-t-2xl p-4 pb-6 max-h-[70vh] overflow-y-auto animate-slide-up"
+        }
       >
-        &times;
-      </button>
-
-      <h2 className="text-lg font-semibold text-white mb-1">
-        {municipality.name}
-      </h2>
-      <p className="text-sm text-slate-400 mb-4">{stateName}</p>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <Stat label="População" value={municipality.population.toLocaleString("pt-BR")} />
-        <Stat
-          label="Beneficiários BF"
-          value={municipality.bolsaFamiliaRecipients.toLocaleString("pt-BR")}
-          color="text-amber-400"
-        />
-        <Stat
-          label="Trabalhadores Formais"
-          value={municipality.formalWorkers.toLocaleString("pt-BR")}
-          color="text-blue-400"
-        />
-        <Stat label="Razão BF/Trab." value={municipality.ratio.toFixed(2)} />
-        <Stat
-          label="% Pop. no Bolsa Família"
-          value={`${bfPercentOfPopulation}%`}
-          color="text-amber-400"
-        />
+        <div className="w-10 h-1 bg-slate-600 rounded-full mx-auto mb-3" />
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <h2 className="text-base font-semibold text-white">{municipality.name}</h2>
+            <p className="text-sm text-slate-400">{stateName}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-white transition-colors cursor-pointer text-xl leading-none p-1"
+            aria-label="Fechar painel"
+          >
+            &times;
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Stat label="População" value={municipality.population.toLocaleString("pt-BR")} />
+          <Stat
+            label="Beneficiários BF"
+            value={municipality.bolsaFamiliaRecipients.toLocaleString("pt-BR")}
+            color="text-amber-400"
+          />
+          <Stat
+            label="Trabalhadores Formais"
+            value={municipality.formalWorkers.toLocaleString("pt-BR")}
+            color="text-blue-400"
+          />
+          <Stat label="Razão BF/Trab." value={municipality.ratio.toFixed(2)} />
+          <Stat
+            label="% Pop. no Bolsa Família"
+            value={`${bfPercentOfPopulation}%`}
+            color="text-amber-400"
+          />
+        </div>
       </div>
-    </div>
+
+      {/* Desktop: inline panel */}
+      <div className="hidden sm:block bg-slate-900/50 rounded-2xl border border-slate-800 p-4 sm:p-6 relative">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer text-xl leading-none"
+          aria-label="Fechar painel"
+        >
+          &times;
+        </button>
+
+        <h2 className="text-lg font-semibold text-white mb-1">
+          {municipality.name}
+        </h2>
+        <p className="text-sm text-slate-400 mb-4">{stateName}</p>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <Stat label="População" value={municipality.population.toLocaleString("pt-BR")} />
+          <Stat
+            label="Beneficiários BF"
+            value={municipality.bolsaFamiliaRecipients.toLocaleString("pt-BR")}
+            color="text-amber-400"
+          />
+          <Stat
+            label="Trabalhadores Formais"
+            value={municipality.formalWorkers.toLocaleString("pt-BR")}
+            color="text-blue-400"
+          />
+          <Stat label="Razão BF/Trab." value={municipality.ratio.toFixed(2)} />
+          <Stat
+            label="% Pop. no Bolsa Família"
+            value={`${bfPercentOfPopulation}%`}
+            color="text-amber-400"
+          />
+        </div>
+      </div>
+    </>
   );
 }
 
