@@ -40,6 +40,20 @@ export function Dashboard({
   const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
   const [selectedMunicipalityId, setSelectedMunicipalityId] = useState<string | null>(null);
 
+  const [nudgeDismissed, setNudgeDismissed] = useState({ step1: false, step2: false });
+  useEffect(() => {
+    const stored = sessionStorage.getItem("nudge-dismissed");
+    if (stored) setNudgeDismissed(JSON.parse(stored));
+  }, []);
+
+  function dismissNudge(step: "step1" | "step2") {
+    setNudgeDismissed((prev) => {
+      const next = { ...prev, [step]: true };
+      sessionStorage.setItem("nudge-dismissed", JSON.stringify(next));
+      return next;
+    });
+  }
+
   const allStates = Object.values(statesByRegion).flat();
 
   const selectedState = selectedStateId
@@ -55,8 +69,8 @@ export function Dashboard({
     : null;
 
   function handleStateClick(stateId: string, regionId: string) {
+    if (!nudgeDismissed.step1) dismissNudge("step1");
     if (selectedStateId === stateId) {
-      // Clicking the same state deselects it
       setSelectedStateId(null);
       setSelectedRegionId(null);
       setSelectedMunicipalityId(null);
@@ -97,8 +111,12 @@ export function Dashboard({
           municipalities={municipalities}
           selectedMunicipalityId={selectedMunicipalityId}
           stateName={selectedState.name}
-          onSelect={setSelectedMunicipalityId}
+          onSelect={(id) => {
+            setSelectedMunicipalityId(id);
+            if (id && !nudgeDismissed.step2) dismissNudge("step2");
+          }}
           onClear={handleBackToNational}
+          showNudge={!nudgeDismissed.step2}
         />
       )}
 
@@ -147,6 +165,19 @@ export function Dashboard({
       {/* Map + sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <div className="lg:col-span-2 bg-slate-900/50 rounded-2xl border border-slate-800 p-3 sm:p-6">
+          {!selectedStateId && !nudgeDismissed.step1 && (
+            <div className="flex justify-center mb-3 animate-bubble-in">
+              <div className="animate-gentle-bounce">
+                <div className="relative bg-amber-500 text-slate-950 text-xs font-semibold px-4 py-2 rounded-full shadow-lg shadow-amber-500/20">
+                  <span className="mr-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-950/20 text-[10px] font-bold">1</span>
+                  Clique em um estado no mapa
+                  <svg className="absolute -bottom-2 left-1/2 -translate-x-1/2" width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M6 8L0 0H12L6 8Z" fill="rgb(245 158 11)" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          )}
           <BrazilMap
             statesByRegion={statesByRegion}
             selectedStateId={selectedStateId}
@@ -193,12 +224,14 @@ function CitySelector({
   stateName,
   onSelect,
   onClear,
+  showNudge,
 }: {
   municipalities: MunicipalityData[];
   selectedMunicipalityId: string | null;
   stateName: string;
   onSelect: (id: string | null) => void;
   onClear: () => void;
+  showNudge: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -221,7 +254,20 @@ function CitySelector({
   }
 
   return (
-    <div className="bg-slate-900/50 rounded-2xl border border-slate-800 p-3 sm:p-4 animate-fade-in">
+    <div className="relative bg-slate-900/50 rounded-2xl border border-slate-800 p-3 sm:p-4 animate-fade-in overflow-visible">
+      {showNudge && !selectedMunicipalityId && !isOpen && (
+        <div className="absolute -top-8 left-1/2 -translate-x-1/2 animate-bubble-in z-10">
+          <div className="animate-gentle-bounce">
+            <div className="relative bg-amber-500 text-slate-950 text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg shadow-amber-500/20 whitespace-nowrap">
+              <span className="mr-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-950/20 text-[10px] font-bold">2</span>
+              Agora escolha um município
+              <svg className="absolute -bottom-2 left-1/2 -translate-x-1/2" width="12" height="8" viewBox="0 0 12 8" fill="none">
+                <path d="M6 8L0 0H12L6 8Z" fill="rgb(245 158 11)" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
         <label className="text-sm font-medium text-slate-300 whitespace-nowrap">
           Município em {stateName}
