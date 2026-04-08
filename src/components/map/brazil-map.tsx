@@ -1,33 +1,61 @@
 "use client";
 
 import { useState } from "react";
-import { RegionData, StateData } from "@/lib/types/region";
+import { RegionData, StateData, MunicipalityData } from "@/lib/types/region";
 import { getColorForRatio } from "@/lib/data/colors";
 import { REGION_PATHS } from "./region-paths";
 import { REGION_STATE_PATHS } from "./state-paths";
+import { getStateMunicipalityPaths } from "./municipality-paths";
+
+type ViewLevel = "national" | "region" | "state";
 
 interface BrazilMapProps {
   regions: RegionData[];
   statesByRegion: Record<string, StateData[]>;
+  municipalitiesByState: Record<string, MunicipalityData[]>;
   selectedRegion: RegionData | null;
+  selectedState: StateData | null;
   onRegionClick: (regionId: string) => void;
+  onStateClick: (stateId: string) => void;
 }
 
 export function BrazilMap({
   regions,
   statesByRegion,
+  municipalitiesByState,
   selectedRegion,
+  selectedState,
   onRegionClick,
+  onStateClick,
 }: BrazilMapProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  if (selectedRegion) {
+  const viewLevel: ViewLevel = selectedState
+    ? "state"
+    : selectedRegion
+      ? "region"
+      : "national";
+
+  if (viewLevel === "state" && selectedState) {
+    const municipalities = municipalitiesByState[selectedState.id] || [];
+    return (
+      <MunicipalityDetailMap
+        state={selectedState}
+        municipalities={municipalities}
+        hoveredId={hoveredId}
+        onHover={setHoveredId}
+      />
+    );
+  }
+
+  if (viewLevel === "region" && selectedRegion) {
     return (
       <RegionDetailMap
         region={selectedRegion}
         states={statesByRegion[selectedRegion.id] || []}
         hoveredId={hoveredId}
         onHover={setHoveredId}
+        onStateClick={onStateClick}
       />
     );
   }
@@ -94,11 +122,13 @@ function RegionDetailMap({
   states,
   hoveredId,
   onHover,
+  onStateClick,
 }: {
   region: RegionData;
   states: StateData[];
   hoveredId: string | null;
   onHover: (id: string | null) => void;
+  onStateClick: (stateId: string) => void;
 }) {
   const regionPaths = REGION_STATE_PATHS[region.id];
   if (!regionPaths) return null;
@@ -129,6 +159,7 @@ function RegionDetailMap({
                 className="transition-all duration-200 cursor-pointer"
                 onMouseEnter={() => onHover(id)}
                 onMouseLeave={() => onHover(null)}
+                onClick={() => onStateClick(id)}
               />
               <text
                 x={labelX}
@@ -153,6 +184,82 @@ function RegionDetailMap({
           bolsaFamilia={stateMap.get(hoveredId)!.bolsaFamiliaRecipients}
           workers={stateMap.get(hoveredId)!.formalWorkers}
           ratio={stateMap.get(hoveredId)!.ratio}
+        />
+      )}
+    </div>
+  );
+}
+
+function MunicipalityDetailMap({
+  state,
+  municipalities,
+  hoveredId,
+  onHover,
+}: {
+  state: StateData;
+  municipalities: MunicipalityData[];
+  hoveredId: string | null;
+  onHover: (id: string | null) => void;
+}) {
+  const pathData = getStateMunicipalityPaths(state.id);
+  if (!pathData) return null;
+
+  const munMap = new Map(municipalities.map((m) => [m.id, m]));
+
+  return (
+    <div className="relative w-full">
+      <svg
+        viewBox={pathData.viewBox}
+        className="w-full h-auto"
+        role="img"
+        aria-label={`Mapa dos municípios de ${state.name}`}
+      >
+        {pathData.paths.map(({ id, d, labelX, labelY }) => {
+          const mun = munMap.get(id);
+          if (!mun) return null;
+          const isHovered = hoveredId === id;
+
+          // Extract short name for label (first word or abbreviation for long names)
+          const shortName =
+            mun.name.length > 12
+              ? mun.name.split(" ")[0]
+              : mun.name;
+
+          return (
+            <g key={id}>
+              <path
+                d={d}
+                fill={getColorForRatio(mun.ratio)}
+                stroke="#0f172a"
+                strokeWidth={isHovered ? 2.5 : 1.5}
+                opacity={isHovered ? 1 : 0.85}
+                className="transition-all duration-200 cursor-default"
+                onMouseEnter={() => onHover(id)}
+                onMouseLeave={() => onHover(null)}
+              />
+              <text
+                x={labelX}
+                y={labelY}
+                textAnchor="middle"
+                fill="#fff"
+                fontSize="11"
+                fontWeight="500"
+                className="pointer-events-none select-none"
+                style={{ textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}
+              >
+                {shortName}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+
+      {hoveredId && munMap.has(hoveredId) && (
+        <Tooltip
+          name={munMap.get(hoveredId)!.name}
+          bolsaFamilia={munMap.get(hoveredId)!.bolsaFamiliaRecipients}
+          workers={munMap.get(hoveredId)!.formalWorkers}
+          ratio={munMap.get(hoveredId)!.ratio}
         />
       )}
     </div>

@@ -1,5 +1,6 @@
 import { REGIONS, getNationalSummary } from "@/lib/data/regions";
 import { STATES } from "@/lib/data/states";
+import { getAllMunicipalitiesByState } from "@/lib/data/municipalities";
 import { Dashboard } from "@/components/dashboard";
 
 export default function Home() {
@@ -12,6 +13,8 @@ export default function Home() {
     }
     statesByRegion[state.regionId].push(state);
   }
+
+  const municipalitiesByState = getAllMunicipalitiesByState();
 
   return (
     <div className="min-h-screen bg-[#0f172a]">
@@ -28,6 +31,7 @@ export default function Home() {
         <Dashboard
           regions={REGIONS}
           statesByRegion={statesByRegion}
+          municipalitiesByState={municipalitiesByState}
           nationalSummary={summary}
         />
       </main>

@@ -17,6 +17,15 @@ export interface RegionData {
   states: string[];
 }
 
+export interface MunicipalityData {
+  id: string;
+  name: string;
+  stateId: string;
+  bolsaFamiliaRecipients: number;
+  formalWorkers: number;
+  ratio: number;
+}
+
 export interface NationalSummary {
   totalBolsaFamilia: number;
   totalFormalWorkers: number;
