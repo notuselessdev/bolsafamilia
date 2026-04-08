@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { RegionData, StateData, MunicipalityData } from "@/lib/types/region";
 import { NationalSummary } from "@/lib/types/region";
 import { BrazilMap } from "@/components/map/brazil-map";
@@ -579,7 +580,7 @@ function WelcomeModal() {
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <>
       <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={dismiss} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
@@ -626,7 +627,8 @@ function WelcomeModal() {
           </button>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 
