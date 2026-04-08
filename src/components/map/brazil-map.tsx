@@ -20,6 +20,15 @@ interface BrazilMapProps {
   onMunicipalityClick: (municipalityId: string) => void;
 }
 
+function handleKeyActivate(callback: () => void) {
+  return (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      callback();
+    }
+  };
+}
+
 export function BrazilMap({
   regions,
   statesByRegion,
@@ -79,7 +88,16 @@ export function BrazilMap({
           const isHovered = hoveredId === id;
 
           return (
-            <g key={id}>
+            <g
+              key={id}
+              role="button"
+              tabIndex={0}
+              aria-label={`${region.name}: razão ${region.ratio.toFixed(2)}, ${region.bolsaFamiliaRecipients.toLocaleString("pt-BR")} beneficiários BF, ${region.formalWorkers.toLocaleString("pt-BR")} trabalhadores`}
+              onFocus={() => setHoveredId(id)}
+              onBlur={() => setHoveredId(null)}
+              onKeyDown={handleKeyActivate(() => onRegionClick(id))}
+              className="outline-none focus-visible:outline-2 focus-visible:outline-amber-400"
+            >
               <path
                 d={d}
                 fill={getColorForRatio(region.ratio)}
@@ -152,7 +170,16 @@ function RegionDetailMap({
           const isHovered = hoveredId === id;
 
           return (
-            <g key={id}>
+            <g
+              key={id}
+              role="button"
+              tabIndex={0}
+              aria-label={`${state.name} (${abbreviation}): razão ${state.ratio.toFixed(2)}, ${state.bolsaFamiliaRecipients.toLocaleString("pt-BR")} beneficiários BF, ${state.formalWorkers.toLocaleString("pt-BR")} trabalhadores`}
+              onFocus={() => onHover(id)}
+              onBlur={() => onHover(null)}
+              onKeyDown={handleKeyActivate(() => onStateClick(id))}
+              className="outline-none focus-visible:outline-2 focus-visible:outline-amber-400"
+            >
               <path
                 d={d}
                 fill={getColorForRatio(state.ratio)}
@@ -231,7 +258,16 @@ function MunicipalityDetailMap({
               : mun.name;
 
           return (
-            <g key={id}>
+            <g
+              key={id}
+              role="button"
+              tabIndex={0}
+              aria-label={`${mun.name}: razão ${mun.ratio.toFixed(2)}, ${mun.bolsaFamiliaRecipients.toLocaleString("pt-BR")} beneficiários BF, ${mun.formalWorkers.toLocaleString("pt-BR")} trabalhadores`}
+              onFocus={() => onHover(id)}
+              onBlur={() => onHover(null)}
+              onKeyDown={handleKeyActivate(() => onMunicipalityClick(id))}
+              className="outline-none focus-visible:outline-2 focus-visible:outline-amber-400"
+            >
               <path
                 d={d}
                 fill={getColorForRatio(mun.ratio)}
@@ -284,7 +320,10 @@ function Tooltip({
   ratio: number;
 }) {
   return (
-    <div className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-slate-800/95 backdrop-blur-sm border border-slate-600 rounded-xl p-3 sm:p-4 min-w-[180px] sm:min-w-[220px] shadow-2xl">
+    <div
+      role="tooltip"
+      className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-slate-800/95 backdrop-blur-sm border border-slate-600 rounded-xl p-3 sm:p-4 min-w-[180px] sm:min-w-[220px] shadow-2xl"
+    >
       <h3 className="text-white font-semibold text-sm sm:text-lg mb-1.5 sm:mb-2">{name}</h3>
       <div className="space-y-1 sm:space-y-1.5 text-xs sm:text-sm">
         <div className="flex justify-between gap-3">

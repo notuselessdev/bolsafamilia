@@ -1,9 +1,10 @@
+// Viridis-inspired colorblind-friendly palette (perceptually uniform)
 const GRADIENT_STOPS = [
-  { ratio: 0.0, color: "#1e40af" },
-  { ratio: 0.4, color: "#3b82f6" },
-  { ratio: 0.8, color: "#fbbf24" },
-  { ratio: 1.2, color: "#f97316" },
-  { ratio: 1.8, color: "#dc2626" },
+  { ratio: 0.0, color: "#440154" },
+  { ratio: 0.4, color: "#31688e" },
+  { ratio: 0.8, color: "#35b779" },
+  { ratio: 1.2, color: "#8fd744" },
+  { ratio: 1.8, color: "#fde725" },
 ];
 
 export function getColorForRatio(ratio: number): string {

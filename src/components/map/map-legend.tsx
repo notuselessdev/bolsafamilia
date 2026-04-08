@@ -14,6 +14,7 @@ export function MapLegend() {
               key={i}
               className="flex-1"
               style={{ backgroundColor: step.color }}
+              aria-hidden="true"
             />
           ))}
         </div>
@@ -21,11 +22,14 @@ export function MapLegend() {
       </div>
       <div className="flex justify-between px-8">
         {LEGEND_STEPS.map((step, i) => (
-          <span key={i} className="text-xs text-slate-500">
+          <span key={i} className="text-xs text-slate-400 tabular-nums">
             {step.label}
           </span>
         ))}
       </div>
+      <p className="text-xs text-slate-500 mt-1">
+        Paleta viridis — acessível para daltonismo
+      </p>
     </div>
   );
 }
