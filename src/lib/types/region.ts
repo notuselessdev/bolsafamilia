@@ -1,3 +1,13 @@
+export interface StateData {
+  id: string;
+  name: string;
+  abbreviation: string;
+  regionId: string;
+  bolsaFamiliaRecipients: number;
+  formalWorkers: number;
+  ratio: number;
+}
+
 export interface RegionData {
   id: string;
   name: string;
