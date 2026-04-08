@@ -7,6 +7,8 @@ import { BrazilMap } from "@/components/map/brazil-map";
 import { MapLegend } from "@/components/map/map-legend";
 import { SummaryCard } from "@/components/ui/summary-card";
 import { getColorForRatio } from "@/lib/data/colors";
+import { TopRankings } from "@/components/ui/top-rankings";
+import { STATES } from "@/lib/data/states";
 
 interface DashboardProps {
   regions: RegionData[];
@@ -223,6 +225,14 @@ export function Dashboard({
           </div>
         </div>
       </div>
+
+      {/* Top Rankings */}
+      <TopRankings
+        allStates={STATES}
+        allMunicipalities={municipalitiesByState}
+        selectedRegionId={selectedRegionId}
+        selectedStateId={selectedStateId}
+      />
     </>
   );
 }
