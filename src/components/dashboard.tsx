@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RegionData, StateData, MunicipalityData } from "@/lib/types/region";
 import { NationalSummary } from "@/lib/types/region";
 import { BrazilMap } from "@/components/map/brazil-map";
@@ -78,6 +78,8 @@ export function Dashboard({
 
   return (
     <>
+      <WelcomeModal />
+
       {errors.length > 0 && (
         <div className="bg-red-900/20 border border-red-800/50 rounded-lg px-4 py-3 text-sm text-red-300">
           <p className="font-medium mb-1">Alguns dados podem estar desatualizados:</p>
@@ -512,6 +514,73 @@ function EconomicImpactAlert({ bolsaFamiliaRecipients }: { bolsaFamiliaRecipient
       </p>
     </div>
     </div>
+  );
+}
+
+function WelcomeModal() {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem("bf-welcome-dismissed")) {
+      setOpen(true);
+    }
+  }, []);
+
+  function dismiss() {
+    localStorage.setItem("bf-welcome-dismissed", "1");
+    setOpen(false);
+  }
+
+  if (!open) return null;
+
+  return (
+    <>
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={dismiss} />
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div className="pointer-events-auto bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-fade-in">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-bold text-white">Bem-vindo</h2>
+          </div>
+
+          <p className="text-sm text-slate-300 leading-relaxed mb-4">
+            Os dados exibidos neste painel são atualizados diariamente a partir de fontes oficiais do governo federal:
+          </p>
+
+          <div className="space-y-3 mb-6">
+            <div className="flex items-start gap-3 bg-slate-800/50 rounded-xl p-3">
+              <span className="text-amber-400 text-lg leading-none mt-0.5">1</span>
+              <div>
+                <p className="text-sm font-medium text-white">Portal da Transparência</p>
+                <p className="text-xs text-slate-400">Dados de beneficiários do Bolsa Família e valores pagos pelo governo federal.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-slate-800/50 rounded-xl p-3">
+              <span className="text-amber-400 text-lg leading-none mt-0.5">2</span>
+              <div>
+                <p className="text-sm font-medium text-white">IBGE (SIDRA)</p>
+                <p className="text-xs text-slate-400">Dados populacionais e de trabalhadores formais por estado e município.</p>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-slate-500 mb-5">
+            Todas as informações são públicas e obtidas via APIs oficiais. Nenhum dado pessoal é coletado ou armazenado.
+          </p>
+
+          <button
+            onClick={dismiss}
+            className="w-full bg-amber-600 hover:bg-amber-500 text-white font-semibold py-2.5 px-4 rounded-xl transition-colors cursor-pointer text-sm"
+          >
+            Entendi
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 
