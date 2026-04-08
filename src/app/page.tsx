@@ -1,20 +1,8 @@
-import { REGIONS, getNationalSummary } from "@/lib/data/regions";
-import { STATES } from "@/lib/data/states";
-import { getAllMunicipalitiesByState } from "@/lib/data/municipalities";
+import { getDataSnapshot } from "@/lib/api/data-provider";
 import { Dashboard } from "@/components/dashboard";
 
-export default function Home() {
-  const summary = getNationalSummary();
-
-  const statesByRegion: Record<string, typeof STATES> = {};
-  for (const state of STATES) {
-    if (!statesByRegion[state.regionId]) {
-      statesByRegion[state.regionId] = [];
-    }
-    statesByRegion[state.regionId].push(state);
-  }
-
-  const municipalitiesByState = getAllMunicipalitiesByState();
+export default async function Home() {
+  const snapshot = await getDataSnapshot();
 
   return (
     <div className="min-h-screen bg-[#0f172a]">
@@ -29,10 +17,13 @@ export default function Home() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <Dashboard
-          regions={REGIONS}
-          statesByRegion={statesByRegion}
-          municipalitiesByState={municipalitiesByState}
-          nationalSummary={summary}
+          regions={snapshot.regions}
+          statesByRegion={snapshot.statesByRegion}
+          municipalitiesByState={snapshot.municipalitiesByState}
+          nationalSummary={snapshot.nationalSummary}
+          lastUpdated={snapshot.lastUpdated}
+          dataSource={snapshot.dataSource}
+          errors={snapshot.errors}
         />
       </main>
     </div>

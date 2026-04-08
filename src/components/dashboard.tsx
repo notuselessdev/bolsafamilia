@@ -15,6 +15,9 @@ interface DashboardProps {
   statesByRegion: Record<string, StateData[]>;
   municipalitiesByState: Record<string, MunicipalityData[]>;
   nationalSummary: NationalSummary;
+  lastUpdated: string;
+  dataSource: "api" | "static";
+  errors: string[];
 }
 
 export function Dashboard({
@@ -22,6 +25,9 @@ export function Dashboard({
   statesByRegion,
   municipalitiesByState,
   nationalSummary,
+  lastUpdated,
+  dataSource,
+  errors,
 }: DashboardProps) {
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
@@ -113,6 +119,33 @@ export function Dashboard({
           </>
         )}
       </nav>
+
+      {/* Data status */}
+      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+        <span>
+          Atualizado em:{" "}
+          {new Date(lastUpdated).toLocaleString("pt-BR", {
+            dateStyle: "short",
+            timeStyle: "short",
+          })}
+        </span>
+        {dataSource === "static" && (
+          <span className="bg-amber-900/30 text-amber-400 px-2 py-0.5 rounded">
+            Dados estáticos (APIs indisponíveis)
+          </span>
+        )}
+      </div>
+
+      {errors.length > 0 && (
+        <div className="bg-red-900/20 border border-red-800/50 rounded-lg px-4 py-3 text-sm text-red-300">
+          <p className="font-medium mb-1">Alguns dados podem estar desatualizados:</p>
+          <ul className="list-disc list-inside text-xs text-red-400">
+            {errors.map((err, i) => (
+              <li key={i}>{err}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
