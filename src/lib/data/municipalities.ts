@@ -308,10 +308,13 @@ function buildMunicipalities(
   return template.map(({ name, bfPct, wkPct }) => {
     const bf = Math.round(totalBF * bfPct);
     const wk = Math.round(totalWK * wkPct);
+    // Mock population: roughly 2.5x the sum of BF recipients and workers
+    const population = Math.round((bf + wk) * 2.5);
     return {
       id: `${stateId}-${toSlug(name)}`,
       name,
       stateId,
+      population,
       bolsaFamiliaRecipients: bf,
       formalWorkers: wk,
       ratio: wk > 0 ? bf / wk : 0,

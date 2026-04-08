@@ -23,6 +23,7 @@ export function Dashboard({
 }: DashboardProps) {
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
+  const [selectedMunicipalityId, setSelectedMunicipalityId] = useState<string | null>(null);
 
   const selectedRegion = selectedRegionId
     ? regions.find((r) => r.id === selectedRegionId) ?? null
@@ -40,22 +41,38 @@ export function Dashboard({
     ? municipalitiesByState[selectedState.id] ?? []
     : [];
 
+  const selectedMunicipality = selectedMunicipalityId
+    ? municipalities.find((m) => m.id === selectedMunicipalityId) ?? null
+    : null;
+
   function handleRegionClick(regionId: string) {
     setSelectedRegionId(regionId);
     setSelectedStateId(null);
+    setSelectedMunicipalityId(null);
   }
 
   function handleStateClick(stateId: string) {
     setSelectedStateId(stateId);
+    setSelectedMunicipalityId(null);
+  }
+
+  function handleMunicipalityClick(municipalityId: string) {
+    setSelectedMunicipalityId(municipalityId);
+  }
+
+  function handleCloseCityPanel() {
+    setSelectedMunicipalityId(null);
   }
 
   function handleBackToNational() {
     setSelectedRegionId(null);
     setSelectedStateId(null);
+    setSelectedMunicipalityId(null);
   }
 
   function handleBackToRegion() {
     setSelectedStateId(null);
+    setSelectedMunicipalityId(null);
   }
 
   return (
@@ -163,6 +180,15 @@ export function Dashboard({
         )}
       </div>
 
+      {/* City detail panel */}
+      {selectedMunicipality && selectedState && (
+        <CityDetailPanel
+          municipality={selectedMunicipality}
+          stateName={selectedState.name}
+          onClose={handleCloseCityPanel}
+        />
+      )}
+
       {/* Map + sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-slate-900/50 rounded-2xl border border-slate-800 p-4 sm:p-6">
@@ -174,6 +200,7 @@ export function Dashboard({
             selectedState={selectedState}
             onRegionClick={handleRegionClick}
             onStateClick={handleStateClick}
+            onMunicipalityClick={handleMunicipalityClick}
           />
         </div>
 
@@ -326,5 +353,74 @@ function MunicipalitiesSidebar({
         <span className="w-10 text-right">Razão</span>
       </div>
     </>
+  );
+}
+
+function CityDetailPanel({
+  municipality,
+  stateName,
+  onClose,
+}: {
+  municipality: MunicipalityData;
+  stateName: string;
+  onClose: () => void;
+}) {
+  const bfPercentOfPopulation =
+    municipality.population > 0
+      ? ((municipality.bolsaFamiliaRecipients / municipality.population) * 100).toFixed(1)
+      : "0.0";
+
+  return (
+    <div className="bg-slate-900/50 rounded-2xl border border-slate-800 p-4 sm:p-6 relative">
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors cursor-pointer text-xl leading-none"
+        aria-label="Fechar painel"
+      >
+        &times;
+      </button>
+
+      <h2 className="text-lg font-semibold text-white mb-1">
+        {municipality.name}
+      </h2>
+      <p className="text-sm text-slate-400 mb-4">{stateName}</p>
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <Stat label="População" value={municipality.population.toLocaleString("pt-BR")} />
+        <Stat
+          label="Beneficiários BF"
+          value={municipality.bolsaFamiliaRecipients.toLocaleString("pt-BR")}
+          color="text-amber-400"
+        />
+        <Stat
+          label="Trabalhadores Formais"
+          value={municipality.formalWorkers.toLocaleString("pt-BR")}
+          color="text-blue-400"
+        />
+        <Stat label="Razão BF/Trab." value={municipality.ratio.toFixed(2)} />
+        <Stat
+          label="% Pop. no Bolsa Família"
+          value={`${bfPercentOfPopulation}%`}
+          color="text-amber-400"
+        />
+      </div>
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  color = "text-white",
+}: {
+  label: string;
+  value: string;
+  color?: string;
+}) {
+  return (
+    <div>
+      <p className="text-xs text-slate-400 mb-0.5">{label}</p>
+      <p className={`text-base font-semibold tabular-nums ${color}`}>{value}</p>
+    </div>
   );
 }

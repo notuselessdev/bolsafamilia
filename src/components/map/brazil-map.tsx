@@ -17,6 +17,7 @@ interface BrazilMapProps {
   selectedState: StateData | null;
   onRegionClick: (regionId: string) => void;
   onStateClick: (stateId: string) => void;
+  onMunicipalityClick: (municipalityId: string) => void;
 }
 
 export function BrazilMap({
@@ -27,6 +28,7 @@ export function BrazilMap({
   selectedState,
   onRegionClick,
   onStateClick,
+  onMunicipalityClick,
 }: BrazilMapProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
@@ -44,6 +46,7 @@ export function BrazilMap({
         municipalities={municipalities}
         hoveredId={hoveredId}
         onHover={setHoveredId}
+        onMunicipalityClick={onMunicipalityClick}
       />
     );
   }
@@ -195,11 +198,13 @@ function MunicipalityDetailMap({
   municipalities,
   hoveredId,
   onHover,
+  onMunicipalityClick,
 }: {
   state: StateData;
   municipalities: MunicipalityData[];
   hoveredId: string | null;
   onHover: (id: string | null) => void;
+  onMunicipalityClick: (municipalityId: string) => void;
 }) {
   const pathData = getStateMunicipalityPaths(state.id);
   if (!pathData) return null;
@@ -233,9 +238,10 @@ function MunicipalityDetailMap({
                 stroke="#0f172a"
                 strokeWidth={isHovered ? 2.5 : 1.5}
                 opacity={isHovered ? 1 : 0.85}
-                className="transition-all duration-200 cursor-default"
+                className="transition-all duration-200 cursor-pointer"
                 onMouseEnter={() => onHover(id)}
                 onMouseLeave={() => onHover(null)}
+                onClick={() => onMunicipalityClick(id)}
               />
               <text
                 x={labelX}

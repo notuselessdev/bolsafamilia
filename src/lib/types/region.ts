@@ -21,6 +21,7 @@ export interface MunicipalityData {
   id: string;
   name: string;
   stateId: string;
+  population: number;
   bolsaFamiliaRecipients: number;
   formalWorkers: number;
   ratio: number;
