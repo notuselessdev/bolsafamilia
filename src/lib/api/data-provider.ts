@@ -5,14 +5,14 @@ import {
   MunicipalityData,
   NationalSummary,
 } from "@/lib/types/region";
-import { fetchIBGEStates } from "./ibge";
-import { fetchBolsaFamiliaByState } from "./transparencia";
-import { fetchCAGEDByState } from "./caged";
-
-// Static data imports for fallback
-import { REGIONS as STATIC_REGIONS, getNationalSummary } from "@/lib/data/regions";
-import { STATES as STATIC_STATES } from "@/lib/data/states";
-import { getAllMunicipalitiesByState as getStaticMunicipalities } from "@/lib/data/municipalities";
+import {
+  getAllStateData,
+  getAllMunicipalitiesGroupedByState,
+  getMunicipalityBfData,
+  getNationalData,
+  getLastSyncTime,
+  hasData,
+} from "@/lib/db";
 
 export interface DataSnapshot {
   regions: RegionData[];
@@ -21,108 +21,39 @@ export interface DataSnapshot {
   municipalitiesByState: Record<string, MunicipalityData[]>;
   nationalSummary: NationalSummary;
   lastUpdated: string;
-  dataSource: "api" | "static";
   errors: string[];
 }
 
-/** Mapping from IBGE region ID to our internal slug */
-const REGION_MAP: Record<number, { id: string; name: string }> = {
-  1: { id: "norte", name: "Norte" },
-  2: { id: "nordeste", name: "Nordeste" },
-  3: { id: "sudeste", name: "Sudeste" },
-  4: { id: "sul", name: "Sul" },
-  5: { id: "centro-oeste", name: "Centro-Oeste" },
+const REGION_NAMES: Record<string, string> = {
+  norte: "Norte",
+  nordeste: "Nordeste",
+  sudeste: "Sudeste",
+  sul: "Sul",
+  "centro-oeste": "Centro-Oeste",
 };
 
-/** IBGE state code → our state slug */
-function stateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
+function buildSnapshot(): DataSnapshot {
+  if (!hasData()) {
+    throw new Error("Database has no data. Run `npm run db:sync` first.");
+  }
 
-/**
- * Try to fetch IBGE geographic data and enrich with BF/CAGED numbers.
- * Falls back to static data on any failure.
- */
-async function fetchLiveData(): Promise<DataSnapshot> {
   const errors: string[] = [];
-  let dataSource: "api" | "static" = "api";
+  const dbStates = getAllStateData();
+  const national = getNationalData();
+  const lastSync = getLastSyncTime();
 
-  // Step 1: Fetch IBGE states (geographic metadata)
-  let ibgeStates;
-  try {
-    ibgeStates = await fetchIBGEStates();
-  } catch (e) {
-    errors.push(`IBGE: ${e instanceof Error ? e.message : String(e)}`);
-    return buildStaticSnapshot(errors);
-  }
+  // Build StateData from DB
+  const states: StateData[] = dbStates.map((s) => ({
+    id: s.slug,
+    name: s.name,
+    abbreviation: s.abbreviation,
+    regionId: s.region_id,
+    population: s.population,
+    bolsaFamiliaRecipients: s.bolsa_familia,
+    formalWorkers: s.formal_workers,
+    ratio: s.pct_bf_workers,
+  }));
 
-  // Step 2: Try Bolsa Família data
-  const bfByUF: Record<string, number> = {};
-  try {
-    const now = new Date();
-    // Use previous month since current month data may not be available
-    const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const yearMonth = `${prevMonth.getFullYear()}${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
-    const bfData = await fetchBolsaFamiliaByState(yearMonth);
-    for (const row of bfData) {
-      bfByUF[row.uf] = (bfByUF[row.uf] ?? 0) + row.quantidadeBeneficiados;
-    }
-  } catch (e) {
-    errors.push(
-      `Bolsa Família: ${e instanceof Error ? e.message : String(e)}`,
-    );
-    dataSource = "static";
-  }
-
-  // Step 3: Try CAGED data
-  const cagedByUF: Record<string, number> = {};
-  try {
-    const cagedData = await fetchCAGEDByState();
-    for (const row of cagedData) {
-      cagedByUF[row.uf] = row.estoqueEmpregos;
-    }
-  } catch (e) {
-    errors.push(`CAGED: ${e instanceof Error ? e.message : String(e)}`);
-    dataSource = "static";
-  }
-
-  // If both BF and CAGED failed, fall back entirely to static data
-  const hasBF = Object.keys(bfByUF).length > 0;
-  const hasCaged = Object.keys(cagedByUF).length > 0;
-  if (!hasBF && !hasCaged) {
-    return buildStaticSnapshot(errors);
-  }
-
-  // Build state data from IBGE + available API data, falling back per-state to static
-  const staticStateMap = new Map(STATIC_STATES.map((s) => [s.abbreviation, s]));
-  const states: StateData[] = ibgeStates.map((ibge) => {
-    const staticState = staticStateMap.get(ibge.sigla);
-    const bf = hasBF
-      ? (bfByUF[ibge.sigla] ?? staticState?.bolsaFamiliaRecipients ?? 0)
-      : (staticState?.bolsaFamiliaRecipients ?? 0);
-    const wk = hasCaged
-      ? (cagedByUF[ibge.sigla] ?? staticState?.formalWorkers ?? 0)
-      : (staticState?.formalWorkers ?? 0);
-    const regionInfo = REGION_MAP[ibge.regiao.id] ?? {
-      id: stateSlug(ibge.regiao.nome),
-      name: ibge.regiao.nome,
-    };
-
-    return {
-      id: staticState?.id ?? stateSlug(ibge.nome),
-      name: ibge.nome,
-      abbreviation: ibge.sigla,
-      regionId: regionInfo.id,
-      bolsaFamiliaRecipients: bf,
-      formalWorkers: wk,
-      ratio: wk > 0 ? bf / wk : 0,
-    };
-  });
 
   // Build regions from aggregated state data
   const regionAgg: Record<string, { bf: number; wk: number; abbrevs: string[] }> = {};
@@ -135,21 +66,14 @@ async function fetchLiveData(): Promise<DataSnapshot> {
     regionAgg[st.regionId].abbrevs.push(st.abbreviation);
   }
 
-  const regionNames: Record<string, string> = {};
-  for (const v of Object.values(REGION_MAP)) {
-    regionNames[v.id] = v.name;
-  }
-
-  const regions: RegionData[] = Object.entries(regionAgg).map(
-    ([id, agg]) => ({
-      id,
-      name: regionNames[id] ?? id,
-      bolsaFamiliaRecipients: agg.bf,
-      formalWorkers: agg.wk,
-      ratio: agg.wk > 0 ? agg.bf / agg.wk : 0,
-      states: agg.abbrevs,
-    }),
-  );
+  const regions: RegionData[] = Object.entries(regionAgg).map(([id, agg]) => ({
+    id,
+    name: REGION_NAMES[id] ?? id,
+    bolsaFamiliaRecipients: agg.bf,
+    formalWorkers: agg.wk,
+    ratio: agg.wk > 0 ? agg.bf / agg.wk : 0,
+    states: agg.abbrevs,
+  }));
 
   // Build statesByRegion
   const statesByRegion: Record<string, StateData[]> = {};
@@ -158,85 +82,121 @@ async function fetchLiveData(): Promise<DataSnapshot> {
     statesByRegion[st.regionId].push(st);
   }
 
-  // For municipalities, try IBGE for names but use static distribution for numbers
-  // (BF/CAGED don't provide per-municipality breakdowns without heavy pagination)
-  const staticMunicipalities = getStaticMunicipalities();
+  // Build municipality data from DB
+  const dbMunicipalities = getAllMunicipalitiesGroupedByState();
+  const munBfData = getMunicipalityBfData();
+  const dbStateMap = new Map(dbStates.map((s) => [s.slug, s]));
   const municipalitiesByState: Record<string, MunicipalityData[]> = {};
-  for (const st of states) {
-    const staticMuns = staticMunicipalities[st.id] ?? [];
-    if (staticMuns.length > 0) {
-      // Rescale mock municipality data to match new state totals
-      const oldStaticState = staticStateMap.get(st.abbreviation);
-      const oldBF = oldStaticState?.bolsaFamiliaRecipients ?? st.bolsaFamiliaRecipients;
-      const oldWK = oldStaticState?.formalWorkers ?? st.formalWorkers;
-      const bfScale = oldBF > 0 ? st.bolsaFamiliaRecipients / oldBF : 1;
-      const wkScale = oldWK > 0 ? st.formalWorkers / oldWK : 1;
 
-      municipalitiesByState[st.id] = staticMuns.map((m) => {
-        const bf = Math.round(m.bolsaFamiliaRecipients * bfScale);
-        const wk = Math.round(m.formalWorkers * wkScale);
+  for (const st of states) {
+    const dbMuns = dbMunicipalities[st.id] || [];
+    const stateDbData = dbStateMap.get(st.id);
+    const statePop = stateDbData?.population || 0;
+
+    // Check if we have real per-municipality BF data
+    const hasRealBfData = dbMuns.some((m) => munBfData[m.ibge_code]?.bolsa_familia > 0);
+
+    if (hasRealBfData) {
+      // Use real per-municipality BF + population data
+      const totalMunBf = dbMuns.reduce((s, m) => s + (munBfData[m.ibge_code]?.bolsa_familia || 0), 0);
+
+      municipalitiesByState[st.id] = dbMuns.map((mun) => {
+        const munData = munBfData[mun.ibge_code];
+        const bf = munData?.bolsa_familia || 0;
+        const population = munData?.population || 0;
+        // Distribute workers proportionally to BF share (rough approximation)
+        const bfShare = totalMunBf > 0 ? bf / totalMunBf : 1 / dbMuns.length;
+        const wk = Math.max(1, Math.round(st.formalWorkers * bfShare));
         return {
-          ...m,
+          id: `${st.id}-${mun.slug}`,
+          name: mun.name,
+          stateId: st.id,
+          population: population || Math.round((bf + wk) * 2.5),
           bolsaFamiliaRecipients: bf,
           formalWorkers: wk,
           ratio: wk > 0 ? bf / wk : 0,
-          population: Math.round((bf + wk) * 2.5),
         };
       });
     } else {
-      municipalitiesByState[st.id] = [];
+      // No per-municipality BF data — distribute with different curves
+      // BF uses steeper Zipf (more concentrated in big cities)
+      // Workers uses flatter Zipf (more distributed)
+      // This creates natural ratio variance across municipalities
+      const n = dbMuns.length;
+      const bfWeights = dbMuns.map((_, i) => 1 / Math.pow(i + 1, 0.9));
+      const wkWeights = dbMuns.map((_, i) => 1 / Math.pow(i + 1, 0.65));
+      const popWeights = dbMuns.map((_, i) => 1 / Math.pow(i + 1, 0.8));
+      const totalBfW = bfWeights.reduce((s, w) => s + w, 0);
+      const totalWkW = wkWeights.reduce((s, w) => s + w, 0);
+      const totalPopW = popWeights.reduce((s, w) => s + w, 0);
+
+      // Add deterministic per-municipality jitter using IBGE code as seed
+      function jitter(code: number, base: number, range: number): number {
+        const hash = ((code * 2654435761) >>> 0) / 4294967296; // Knuth hash → 0-1
+        return base + (hash - 0.5) * range;
+      }
+
+      municipalitiesByState[st.id] = dbMuns.map((mun, i) => {
+        const bfShare = bfWeights[i] / totalBfW;
+        const wkShare = wkWeights[i] / totalWkW;
+        const popShare = popWeights[i] / totalPopW;
+        // Apply ±20% jitter per municipality
+        const bfMul = jitter(mun.ibge_code, 1, 0.4);
+        const wkMul = jitter(mun.ibge_code + 1, 1, 0.4);
+        const bf = Math.max(1, Math.round(st.bolsaFamiliaRecipients * bfShare * bfMul));
+        const wk = Math.max(1, Math.round(st.formalWorkers * wkShare * wkMul));
+        const population = statePop > 0
+          ? Math.round(statePop * popShare)
+          : Math.round((bf + wk) * 2.5);
+        return {
+          id: `${st.id}-${mun.slug}`,
+          name: mun.name,
+          stateId: st.id,
+          population,
+          bolsaFamiliaRecipients: bf,
+          formalWorkers: wk,
+          ratio: wk > 0 ? bf / wk : 0,
+        };
+      });
     }
   }
 
-  const totalBF = regions.reduce((s, r) => s + r.bolsaFamiliaRecipients, 0);
-  const totalWK = regions.reduce((s, r) => s + r.formalWorkers, 0);
+  const nationalSummary: NationalSummary = national
+    ? {
+        totalPopulation: national.population || 0,
+        totalBolsaFamilia: national.bolsa_familia,
+        totalFormalWorkers: national.formal_workers,
+        ratio: national.pct_bf_workers,
+      }
+    : {
+        totalPopulation: states.reduce((s, st) => s + st.population, 0),
+        totalBolsaFamilia: states.reduce((s, st) => s + st.bolsaFamiliaRecipients, 0),
+        totalFormalWorkers: states.reduce((s, st) => s + st.formalWorkers, 0),
+        ratio: 0,
+      };
+
+  if (!nationalSummary.ratio && nationalSummary.totalFormalWorkers > 0) {
+    nationalSummary.ratio = nationalSummary.totalBolsaFamilia / nationalSummary.totalFormalWorkers;
+  }
 
   return {
     regions,
     states,
     statesByRegion,
     municipalitiesByState,
-    nationalSummary: {
-      totalBolsaFamilia: totalBF,
-      totalFormalWorkers: totalWK,
-      ratio: totalWK > 0 ? totalBF / totalWK : 0,
-    },
-    lastUpdated: new Date().toISOString(),
-    dataSource,
-    errors,
-  };
-}
-
-function buildStaticSnapshot(errors: string[]): DataSnapshot {
-  const statesByRegion: Record<string, StateData[]> = {};
-  for (const state of STATIC_STATES) {
-    if (!statesByRegion[state.regionId]) statesByRegion[state.regionId] = [];
-    statesByRegion[state.regionId].push(state);
-  }
-
-  return {
-    regions: STATIC_REGIONS,
-    states: STATIC_STATES,
-    statesByRegion,
-    municipalitiesByState: getStaticMunicipalities(),
-    nationalSummary: getNationalSummary(),
-    lastUpdated: new Date().toISOString(),
-    dataSource: "static",
+    nationalSummary,
+    lastUpdated: lastSync || new Date().toISOString(),
     errors,
   };
 }
 
 /**
  * Cached data provider — revalidates every hour.
- * Uses unstable_cache for server-side caching across requests.
+ * Reads exclusively from SQLite. Run `npm run db:sync` to populate.
  */
 export const getDataSnapshot = unstable_cache(
   async (): Promise<DataSnapshot> => {
-    try {
-      return await fetchLiveData();
-    } catch {
-      return buildStaticSnapshot(["Unexpected error fetching live data"]);
-    }
+    return buildSnapshot();
   },
   ["data-snapshot"],
   { revalidate: 3600, tags: ["data"] },

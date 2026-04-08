@@ -1,10 +1,9 @@
-// Viridis-inspired colorblind-friendly palette (perceptually uniform)
+// Green → Yellow → Red → Dark alarming for high ratios
 const GRADIENT_STOPS = [
-  { ratio: 0.0, color: "#440154" },
-  { ratio: 0.4, color: "#31688e" },
-  { ratio: 0.8, color: "#35b779" },
-  { ratio: 1.2, color: "#8fd744" },
-  { ratio: 1.8, color: "#fde725" },
+  { ratio: 0.0, color: "#22c55e" },  // green — good
+  { ratio: 0.25, color: "#eab308" }, // yellow — moderate
+  { ratio: 0.5, color: "#ef4444" },  // red — bad
+  { ratio: 0.75, color: "#991b1b" }, // dark red — alarming
 ];
 
 export function getColorForRatio(ratio: number): string {
@@ -39,5 +38,5 @@ function interpolateColor(c1: string, c2: string, t: number): string {
 export const LEGEND_STEPS = GRADIENT_STOPS.map((s) => ({
   ratio: s.ratio,
   color: s.color,
-  label: s.ratio.toFixed(1),
+  label: `${(s.ratio * 100).toFixed(0)}%`,
 }));

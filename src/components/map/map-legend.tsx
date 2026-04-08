@@ -1,10 +1,15 @@
 import { LEGEND_STEPS } from "@/lib/data/colors";
 
 export function MapLegend() {
+  const boundaryLabels = [
+    ...LEGEND_STEPS.map((s) => s.label),
+    "100%",
+  ];
+
   return (
     <div className="flex flex-col gap-2">
       <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
-        Raz&atilde;o Bolsa Fam&iacute;lia / Trabalhadores
+        Porcentagem BF / Trabalhadores
       </h3>
       <div className="flex items-center gap-1">
         <span className="text-xs text-slate-400 w-8 text-right">Baixa</span>
@@ -20,16 +25,13 @@ export function MapLegend() {
         </div>
         <span className="text-xs text-slate-400 w-8">Alta</span>
       </div>
-      <div className="flex justify-between px-8">
-        {LEGEND_STEPS.map((step, i) => (
+      <div className="flex px-8" style={{ justifyContent: "space-between" }}>
+        {boundaryLabels.map((label, i) => (
           <span key={i} className="text-xs text-slate-400 tabular-nums">
-            {step.label}
+            {label}
           </span>
         ))}
       </div>
-      <p className="text-xs text-slate-500 mt-1">
-        Paleta viridis — acessível para daltonismo
-      </p>
     </div>
   );
 }

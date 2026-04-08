@@ -3,6 +3,7 @@ export interface StateData {
   name: string;
   abbreviation: string;
   regionId: string;
+  population: number;
   bolsaFamiliaRecipients: number;
   formalWorkers: number;
   ratio: number;
@@ -28,6 +29,7 @@ export interface MunicipalityData {
 }
 
 export interface NationalSummary {
+  totalPopulation: number;
   totalBolsaFamilia: number;
   totalFormalWorkers: number;
   ratio: number;

@@ -2,19 +2,21 @@ interface SummaryCardProps {
   title: string;
   value: string;
   subtitle?: string;
-  accent: "amber" | "blue" | "white";
+  accent: "amber" | "blue" | "white" | "red" | "green";
 }
 
 const ACCENT_STYLES = {
   amber: "text-amber-400 border-amber-400/20 bg-amber-400/5",
   blue: "text-blue-400 border-blue-400/20 bg-blue-400/5",
   white: "text-white border-slate-600 bg-slate-800/50",
+  red: "text-red-400 border-red-400/20 bg-red-400/5",
+  green: "text-emerald-400 border-emerald-400/20 bg-emerald-400/5",
 } as const;
 
 export function SummaryCard({ title, value, subtitle, accent }: SummaryCardProps) {
   const styles = ACCENT_STYLES[accent];
   return (
-    <div className={`rounded-xl border p-3 sm:p-5 ${styles}`}>
+    <div className={`rounded-xl border p-3 sm:p-4 ${styles}`}>
       <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-400 mb-0.5 sm:mb-1">
         {title}
       </p>

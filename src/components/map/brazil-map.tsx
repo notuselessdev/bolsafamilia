@@ -1,23 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { RegionData, StateData, MunicipalityData } from "@/lib/types/region";
+import { StateData } from "@/lib/types/region";
 import { getColorForRatio } from "@/lib/data/colors";
-import { REGION_PATHS } from "./region-paths";
-import { REGION_STATE_PATHS } from "./state-paths";
-import { getStateMunicipalityPaths } from "./municipality-paths";
-
-type ViewLevel = "national" | "region" | "state";
+import { BRAZIL_STATE_PATHS, BRAZIL_VIEW_BOX } from "./brazil-state-paths";
 
 interface BrazilMapProps {
-  regions: RegionData[];
   statesByRegion: Record<string, StateData[]>;
-  municipalitiesByState: Record<string, MunicipalityData[]>;
-  selectedRegion: RegionData | null;
-  selectedState: StateData | null;
-  onRegionClick: (regionId: string) => void;
-  onStateClick: (stateId: string) => void;
-  onMunicipalityClick: (municipalityId: string) => void;
+  selectedStateId: string | null;
+  onStateClick: (stateId: string, regionId: string) => void;
 }
 
 function handleKeyActivate(callback: () => void) {
@@ -30,176 +21,67 @@ function handleKeyActivate(callback: () => void) {
 }
 
 export function BrazilMap({
-  regions,
   statesByRegion,
-  municipalitiesByState,
-  selectedRegion,
-  selectedState,
-  onRegionClick,
+  selectedStateId,
   onStateClick,
-  onMunicipalityClick,
 }: BrazilMapProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
-  const viewLevel: ViewLevel = selectedState
-    ? "state"
-    : selectedRegion
-      ? "region"
-      : "national";
-
-  if (viewLevel === "state" && selectedState) {
-    const municipalities = municipalitiesByState[selectedState.id] || [];
-    return (
-      <MunicipalityDetailMap
-        state={selectedState}
-        municipalities={municipalities}
-        hoveredId={hoveredId}
-        onHover={setHoveredId}
-        onMunicipalityClick={onMunicipalityClick}
-      />
-    );
+  const allStates = new Map<string, StateData>();
+  for (const states of Object.values(statesByRegion)) {
+    for (const state of states) {
+      allStates.set(state.id, state);
+    }
   }
-
-  if (viewLevel === "region" && selectedRegion) {
-    return (
-      <RegionDetailMap
-        region={selectedRegion}
-        states={statesByRegion[selectedRegion.id] || []}
-        hoveredId={hoveredId}
-        onHover={setHoveredId}
-        onStateClick={onStateClick}
-      />
-    );
-  }
-
-  const regionMap = new Map(regions.map((r) => [r.id, r]));
 
   return (
     <div className="relative w-full">
       <svg
-        viewBox="0 0 800 750"
+        viewBox={BRAZIL_VIEW_BOX}
         className="w-full h-auto touch-manipulation"
         role="img"
-        aria-label="Mapa do Brasil por regiões"
+        aria-label="Mapa do Brasil por estados"
       >
-        {REGION_PATHS.map(({ id, d, labelX, labelY }) => {
-          const region = regionMap.get(id);
-          if (!region) return null;
-          const isHovered = hoveredId === id;
-
-          return (
-            <g
-              key={id}
-              role="button"
-              tabIndex={0}
-              aria-label={`${region.name}: razão ${region.ratio.toFixed(2)}, ${region.bolsaFamiliaRecipients.toLocaleString("pt-BR")} beneficiários BF, ${region.formalWorkers.toLocaleString("pt-BR")} trabalhadores`}
-              onFocus={() => setHoveredId(id)}
-              onBlur={() => setHoveredId(null)}
-              onKeyDown={handleKeyActivate(() => onRegionClick(id))}
-              className="outline-none focus-visible:outline-2 focus-visible:outline-amber-400"
-            >
-              <path
-                d={d}
-                fill={getColorForRatio(region.ratio)}
-                stroke="#0f172a"
-                strokeWidth={isHovered ? 2.5 : 1.5}
-                opacity={isHovered ? 1 : 0.85}
-                className="transition-all duration-200 cursor-pointer"
-                onMouseEnter={() => setHoveredId(id)}
-                onMouseLeave={() => setHoveredId(null)}
-                onClick={() => onRegionClick(id)}
-              />
-              <text
-                x={labelX}
-                y={labelY}
-                textAnchor="middle"
-                fill="#fff"
-                fontSize="14"
-                fontWeight="600"
-                className="pointer-events-none select-none"
-                style={{ textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}
-              >
-                {region.name}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-
-      {hoveredId && regionMap.has(hoveredId) && (
-        <Tooltip
-          name={regionMap.get(hoveredId)!.name}
-          bolsaFamilia={regionMap.get(hoveredId)!.bolsaFamiliaRecipients}
-          workers={regionMap.get(hoveredId)!.formalWorkers}
-          ratio={regionMap.get(hoveredId)!.ratio}
-        />
-      )}
-    </div>
-  );
-}
-
-function RegionDetailMap({
-  region,
-  states,
-  hoveredId,
-  onHover,
-  onStateClick,
-}: {
-  region: RegionData;
-  states: StateData[];
-  hoveredId: string | null;
-  onHover: (id: string | null) => void;
-  onStateClick: (stateId: string) => void;
-}) {
-  const regionPaths = REGION_STATE_PATHS[region.id];
-  if (!regionPaths) return null;
-
-  const stateMap = new Map(states.map((s) => [s.id, s]));
-
-  return (
-    <div className="relative w-full">
-      <svg
-        viewBox={regionPaths.viewBox}
-        className="w-full h-auto touch-manipulation"
-        role="img"
-        aria-label={`Mapa da região ${region.name}`}
-      >
-        {regionPaths.paths.map(({ id, d, labelX, labelY, abbreviation }) => {
-          const state = stateMap.get(id);
+        {BRAZIL_STATE_PATHS.map(({ id, d, labelX, labelY, abbreviation, regionId }) => {
+          const state = allStates.get(id);
           if (!state) return null;
           const isHovered = hoveredId === id;
+          const isSelected = selectedStateId === id;
+          const isDimmed = selectedStateId !== null && !isSelected && !isHovered;
 
           return (
             <g
               key={id}
               role="button"
               tabIndex={0}
-              aria-label={`${state.name} (${abbreviation}): razão ${state.ratio.toFixed(2)}, ${state.bolsaFamiliaRecipients.toLocaleString("pt-BR")} beneficiários BF, ${state.formalWorkers.toLocaleString("pt-BR")} trabalhadores`}
-              onFocus={() => onHover(id)}
-              onBlur={() => onHover(null)}
-              onKeyDown={handleKeyActivate(() => onStateClick(id))}
+              aria-label={`${state.name} (${abbreviation}): ${(state.ratio * 100).toFixed(0)}% BF por trabalhador, ${state.bolsaFamiliaRecipients.toLocaleString("pt-BR")} beneficiários BF, ${state.formalWorkers.toLocaleString("pt-BR")} trabalhadores`}
+              onFocus={() => setHoveredId(id)}
+              onBlur={() => setHoveredId(null)}
+              onKeyDown={handleKeyActivate(() => onStateClick(id, regionId))}
               className="outline-none focus-visible:outline-2 focus-visible:outline-amber-400"
             >
               <path
                 d={d}
                 fill={getColorForRatio(state.ratio)}
-                stroke="#0f172a"
-                strokeWidth={isHovered ? 2.5 : 1.5}
-                opacity={isHovered ? 1 : 0.85}
-                className="transition-all duration-200 cursor-pointer"
-                onMouseEnter={() => onHover(id)}
-                onMouseLeave={() => onHover(null)}
-                onClick={() => onStateClick(id)}
+                stroke={isSelected ? "#fbbf24" : "#0f172a"}
+                strokeWidth={isSelected ? 2.5 : isHovered ? 1.8 : 0.8}
+                opacity={isDimmed ? 0.35 : isHovered || isSelected ? 1 : 0.85}
+                className="transition-all duration-300 cursor-pointer"
+                onMouseEnter={() => setHoveredId(id)}
+                onMouseLeave={() => setHoveredId(null)}
+                onClick={() => onStateClick(id, regionId)}
               />
               <text
                 x={labelX}
                 y={labelY}
                 textAnchor="middle"
+                dominantBaseline="central"
                 fill="#fff"
-                fontSize="13"
+                fontSize="8"
                 fontWeight="600"
-                className="pointer-events-none select-none"
-                style={{ textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}
+                opacity={isDimmed ? 0.3 : 1}
+                className="pointer-events-none select-none transition-opacity duration-300"
+                style={{ textShadow: "0 1px 3px rgba(0,0,0,0.8)" }}
               >
                 {abbreviation}
               </text>
@@ -208,100 +90,12 @@ function RegionDetailMap({
         })}
       </svg>
 
-      {hoveredId && stateMap.has(hoveredId) && (
+      {hoveredId && !selectedStateId && allStates.has(hoveredId) && (
         <Tooltip
-          name={stateMap.get(hoveredId)!.name}
-          bolsaFamilia={stateMap.get(hoveredId)!.bolsaFamiliaRecipients}
-          workers={stateMap.get(hoveredId)!.formalWorkers}
-          ratio={stateMap.get(hoveredId)!.ratio}
-        />
-      )}
-    </div>
-  );
-}
-
-function MunicipalityDetailMap({
-  state,
-  municipalities,
-  hoveredId,
-  onHover,
-  onMunicipalityClick,
-}: {
-  state: StateData;
-  municipalities: MunicipalityData[];
-  hoveredId: string | null;
-  onHover: (id: string | null) => void;
-  onMunicipalityClick: (municipalityId: string) => void;
-}) {
-  const pathData = getStateMunicipalityPaths(state.id);
-  if (!pathData) return null;
-
-  const munMap = new Map(municipalities.map((m) => [m.id, m]));
-
-  return (
-    <div className="relative w-full">
-      <svg
-        viewBox={pathData.viewBox}
-        className="w-full h-auto touch-manipulation"
-        role="img"
-        aria-label={`Mapa dos municípios de ${state.name}`}
-      >
-        {pathData.paths.map(({ id, d, labelX, labelY }) => {
-          const mun = munMap.get(id);
-          if (!mun) return null;
-          const isHovered = hoveredId === id;
-
-          // Extract short name for label (first word or abbreviation for long names)
-          const shortName =
-            mun.name.length > 12
-              ? mun.name.split(" ")[0]
-              : mun.name;
-
-          return (
-            <g
-              key={id}
-              role="button"
-              tabIndex={0}
-              aria-label={`${mun.name}: razão ${mun.ratio.toFixed(2)}, ${mun.bolsaFamiliaRecipients.toLocaleString("pt-BR")} beneficiários BF, ${mun.formalWorkers.toLocaleString("pt-BR")} trabalhadores`}
-              onFocus={() => onHover(id)}
-              onBlur={() => onHover(null)}
-              onKeyDown={handleKeyActivate(() => onMunicipalityClick(id))}
-              className="outline-none focus-visible:outline-2 focus-visible:outline-amber-400"
-            >
-              <path
-                d={d}
-                fill={getColorForRatio(mun.ratio)}
-                stroke="#0f172a"
-                strokeWidth={isHovered ? 2.5 : 1.5}
-                opacity={isHovered ? 1 : 0.85}
-                className="transition-all duration-200 cursor-pointer"
-                onMouseEnter={() => onHover(id)}
-                onMouseLeave={() => onHover(null)}
-                onClick={() => onMunicipalityClick(id)}
-              />
-              <text
-                x={labelX}
-                y={labelY}
-                textAnchor="middle"
-                fill="#fff"
-                fontSize="11"
-                fontWeight="500"
-                className="pointer-events-none select-none"
-                style={{ textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}
-              >
-                {shortName}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-
-      {hoveredId && munMap.has(hoveredId) && (
-        <Tooltip
-          name={munMap.get(hoveredId)!.name}
-          bolsaFamilia={munMap.get(hoveredId)!.bolsaFamiliaRecipients}
-          workers={munMap.get(hoveredId)!.formalWorkers}
-          ratio={munMap.get(hoveredId)!.ratio}
+          name={allStates.get(hoveredId)!.name}
+          bolsaFamilia={allStates.get(hoveredId)!.bolsaFamiliaRecipients}
+          workers={allStates.get(hoveredId)!.formalWorkers}
+          ratio={allStates.get(hoveredId)!.ratio}
         />
       )}
     </div>
@@ -339,9 +133,9 @@ function Tooltip({
           </span>
         </div>
         <div className="border-t border-slate-600 pt-1 sm:pt-1.5 flex justify-between gap-3">
-          <span className="text-slate-400">Razão</span>
-          <span className="text-white font-semibold">
-            {ratio.toFixed(2)}
+          <span className="text-slate-400">BF/Trabalhador</span>
+          <span className="font-semibold" style={{ color: getColorForRatio(ratio) }}>
+            {(ratio * 100).toFixed(0)}%
           </span>
         </div>
       </div>

@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:mapsvg.com)",
+      "Bash(curl -sL \"https://mapsvg.com/maps/geo-calibrated/brazil.svg\" -o /tmp/brazil.svg)",
+      "Read(//tmp/**)",
+      "Bash(npx next:*)",
+      "Bash(curl -sL \"https://servicodados.ibge.gov.br/api/v3/malhas/estados/31?formato=image/svg+xml&intrarregiao=municipio\" -o /tmp/mg-mun.svg)",
+      "Bash(curl -v \"https://servicodados.ibge.gov.br/api/v3/malhas/estados/31?formato=image/svg+xml&intrarregiao=municipio\")",
+      "Bash(curl -sL --max-time 20 \"https://servicodados.ibge.gov.br/api/v3/malhas/estados/28?formato=image/svg+xml&intrarregiao=municipio\")",
+      "Read(//private/tmp/**)",
+      "Bash(curl -sL \"https://servicodados.ibge.gov.br/api/v1/localidades/estados/35/municipios\")",
+      "Bash(node -e \"const d=[];process.stdin.on\\(''''data'''',c=>d.push\\(c\\)\\);process.stdin.on\\(''''end'''',\\(\\)=>{const j=JSON.parse\\(d.join\\(''''''''\\)\\);console.log\\(''''Total:'''',j.length\\);console.log\\(''''Sample:'''',JSON.stringify\\(j.slice\\(0,3\\),null,2\\)\\);console.log\\(''''Has Poá:'''',j.some\\(m=>m.nome===''''Poá''''\\)\\);}\\)\")",
+      "Bash(npm install:*)",
+      "Bash(node:*)",
+      "Bash(ls -a /Users/mayron/projects/notuselessdev/bolsafamilia/.env*)",
+      "WebFetch(domain:apisidra.ibge.gov.br)",
+      "Bash(npm run:*)",
+      "Bash(ls:*)",
+      "Bash(sqlite3:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.portaldatransparencia.gov.br)",
+      "WebFetch(domain:gist.github.com)",
+      "WebFetch(domain:www.directd.com.br)"
+    ]
+  }
+}

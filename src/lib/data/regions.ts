@@ -53,6 +53,7 @@ export function getNationalSummary(): NationalSummary {
     0
   );
   return {
+    totalPopulation: 0,
     totalBolsaFamilia,
     totalFormalWorkers,
     ratio: totalBolsaFamilia / totalFormalWorkers,

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { StateData, MunicipalityData } from "@/lib/types/region";
+import { getColorForRatio } from "@/lib/data/colors";
 
 type Tab = "states" | "cities";
 type Metric = "count" | "ratio";
@@ -11,6 +12,7 @@ interface TopRankingsProps {
   allMunicipalities: Record<string, MunicipalityData[]>;
   selectedRegionId: string | null;
   selectedStateId: string | null;
+  className?: string;
 }
 
 export function TopRankings({
@@ -18,6 +20,7 @@ export function TopRankings({
   allMunicipalities,
   selectedRegionId,
   selectedStateId,
+  className,
 }: TopRankingsProps) {
   const [activeTab, setActiveTab] = useState<Tab>("states");
   const [activeMetric, setActiveMetric] = useState<Metric>("count");
@@ -41,15 +44,15 @@ export function TopRankings({
     }
   }
 
-  // Sort by selected metric descending, take top 10
+  // Sort by selected metric descending (worst first)
   const sortFn =
     activeMetric === "count"
       ? (a: { bolsaFamiliaRecipients: number }, b: { bolsaFamiliaRecipients: number }) =>
           b.bolsaFamiliaRecipients - a.bolsaFamiliaRecipients
       : (a: { ratio: number }, b: { ratio: number }) => b.ratio - a.ratio;
 
-  const topStates = [...scopedStates].sort(sortFn).slice(0, 10);
-  const topCities = [...scopedMunicipalities].sort(sortFn).slice(0, 10);
+  const sortedStates = [...scopedStates].sort(sortFn);
+  const sortedCities = [...scopedMunicipalities].sort(sortFn);
 
   // When drilled into a state, only cities tab makes sense
   const showStatesTab = !selectedStateId;
@@ -64,12 +67,12 @@ export function TopRankings({
       : "Brasil";
 
   return (
-    <div className="bg-slate-900/50 rounded-2xl border border-slate-800 p-3 sm:p-6">
+    <div className={`bg-slate-900/50 rounded-2xl border border-slate-800 p-3 sm:p-6 flex flex-col ${className ?? ""}`}>
       <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-3">
-        Top Rankings — {scopeLabel}
+        Municípios — {scopeLabel}
       </h3>
 
-      {/* Metric toggle: By Count / By Ratio */}
+      {/* Metric toggle: By Count / By % */}
       <div className="flex gap-1 mb-3 bg-slate-800/50 rounded-lg p-1">
         <button
           onClick={() => setActiveMetric("count")}
@@ -89,7 +92,7 @@ export function TopRankings({
               : "text-slate-400 hover:text-slate-300"
           }`}
         >
-          Por Razão
+          Por Porcentagem
         </button>
       </div>
 
@@ -104,7 +107,7 @@ export function TopRankings({
                 : "text-slate-400 hover:text-slate-300"
             }`}
           >
-            Top Estados
+            Estados
           </button>
           <button
             onClick={() => setActiveTab("cities")}
@@ -114,15 +117,15 @@ export function TopRankings({
                 : "text-slate-400 hover:text-slate-300"
             }`}
           >
-            Top Cidades
+            Cidades
           </button>
         </div>
       )}
 
       {/* Table */}
-      <div className="space-y-0">
+      <div className="flex-1 flex flex-col min-h-0">
         {/* Header */}
-        <div className="flex items-center text-xs text-slate-500 pb-2 border-b border-slate-800">
+        <div className="flex items-center text-xs text-slate-500 pb-2 border-b border-slate-800 pr-4">
           <span className="w-6 text-right mr-2">#</span>
           <span className="flex-1">Nome</span>
           {activeMetric === "count" ? (
@@ -131,13 +134,13 @@ export function TopRankings({
               <span className="w-20 text-right">Trab.</span>
             </>
           ) : (
-            <span className="w-32 text-right">Razão (BF/Trab.)</span>
+            <span className="w-32 text-right">BF/Trab.</span>
           )}
         </div>
 
         {effectiveTab === "states" ? (
-          <div className="divide-y divide-slate-800/50">
-            {topStates.map((state, i) => (
+          <div className="divide-y divide-slate-800/50 max-h-[500px] overflow-y-auto custom-scrollbar pr-4">
+            {sortedStates.map((state, i) => (
               <div
                 key={state.id}
                 className="flex items-center text-sm py-2"
@@ -158,16 +161,18 @@ export function TopRankings({
                     </span>
                   </>
                 ) : (
-                  <span className="w-32 text-right text-orange-400 tabular-nums text-xs">
-                    {formatRatio(state.bolsaFamiliaRecipients, state.formalWorkers)}
+                  <span className="w-32 flex justify-end">
+                    <span className="tabular-nums text-xs font-medium px-2 py-0.5 rounded-full" style={{ color: getColorForRatio(state.ratio), backgroundColor: `${getColorForRatio(state.ratio)}18` }}>
+                      {formatRatio(state.ratio)}
+                    </span>
                   </span>
                 )}
               </div>
             ))}
           </div>
         ) : (
-          <div className="divide-y divide-slate-800/50 max-h-[400px] overflow-y-auto">
-            {topCities.map((city, i) => (
+          <div className="divide-y divide-slate-800/50 max-h-[500px] overflow-y-auto custom-scrollbar pr-4">
+            {sortedCities.map((city, i) => (
               <div
                 key={city.id}
                 className="flex items-center text-sm py-2"
@@ -188,14 +193,21 @@ export function TopRankings({
                     </span>
                   </>
                 ) : (
-                  <span className="w-32 text-right text-orange-400 tabular-nums text-xs">
-                    {formatRatio(city.bolsaFamiliaRecipients, city.formalWorkers)}
+                  <span className="w-32 flex justify-end">
+                    <span className="tabular-nums text-xs font-medium px-2 py-0.5 rounded-full" style={{ color: getColorForRatio(city.ratio), backgroundColor: `${getColorForRatio(city.ratio)}18` }}>
+                      {formatRatio(city.ratio)}
+                    </span>
                   </span>
                 )}
               </div>
             ))}
           </div>
         )}
+      </div>
+
+      <div className="mt-3 pt-2 border-t border-slate-800 flex gap-4 text-xs text-slate-500">
+        <span><span className="text-amber-400">BF</span> = Bolsa Família</span>
+        <span><span className="text-blue-400">Trab.</span> = Trabalhadores</span>
       </div>
     </div>
   );
@@ -207,10 +219,8 @@ function formatNumber(n: number): string {
   return n.toLocaleString("pt-BR");
 }
 
-function formatRatio(recipients: number, workers: number): string {
-  if (workers === 0) return "—";
-  const ratio = recipients / workers;
-  return `${ratio.toFixed(2)} BF/trab.`;
+function formatRatio(ratio: number): string {
+  return `${(ratio * 100).toFixed(0)}%`;
 }
 
 function capitalize(s: string): string {
