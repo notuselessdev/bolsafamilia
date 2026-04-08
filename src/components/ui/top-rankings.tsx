@@ -4,6 +4,7 @@ import { useState } from "react";
 import { StateData, MunicipalityData } from "@/lib/types/region";
 
 type Tab = "states" | "cities";
+type Metric = "count" | "ratio";
 
 interface TopRankingsProps {
   allStates: StateData[];
@@ -19,6 +20,7 @@ export function TopRankings({
   selectedStateId,
 }: TopRankingsProps) {
   const [activeTab, setActiveTab] = useState<Tab>("states");
+  const [activeMetric, setActiveMetric] = useState<Metric>("count");
 
   // Filter states by scope
   const scopedStates = selectedRegionId
@@ -39,14 +41,15 @@ export function TopRankings({
     }
   }
 
-  // Sort by BF recipients descending, take top 10
-  const topStates = [...scopedStates]
-    .sort((a, b) => b.bolsaFamiliaRecipients - a.bolsaFamiliaRecipients)
-    .slice(0, 10);
+  // Sort by selected metric descending, take top 10
+  const sortFn =
+    activeMetric === "count"
+      ? (a: { bolsaFamiliaRecipients: number }, b: { bolsaFamiliaRecipients: number }) =>
+          b.bolsaFamiliaRecipients - a.bolsaFamiliaRecipients
+      : (a: { ratio: number }, b: { ratio: number }) => b.ratio - a.ratio;
 
-  const topCities = [...scopedMunicipalities]
-    .sort((a, b) => b.bolsaFamiliaRecipients - a.bolsaFamiliaRecipients)
-    .slice(0, 10);
+  const topStates = [...scopedStates].sort(sortFn).slice(0, 10);
+  const topCities = [...scopedMunicipalities].sort(sortFn).slice(0, 10);
 
   // When drilled into a state, only cities tab makes sense
   const showStatesTab = !selectedStateId;
@@ -66,7 +69,31 @@ export function TopRankings({
         Top Rankings — {scopeLabel}
       </h3>
 
-      {/* Toggle tabs */}
+      {/* Metric toggle: By Count / By Ratio */}
+      <div className="flex gap-1 mb-3 bg-slate-800/50 rounded-lg p-1">
+        <button
+          onClick={() => setActiveMetric("count")}
+          className={`flex-1 text-xs font-medium py-1.5 px-3 rounded-md transition-colors cursor-pointer ${
+            activeMetric === "count"
+              ? "bg-amber-600/80 text-white"
+              : "text-slate-400 hover:text-slate-300"
+          }`}
+        >
+          Por Quantidade
+        </button>
+        <button
+          onClick={() => setActiveMetric("ratio")}
+          className={`flex-1 text-xs font-medium py-1.5 px-3 rounded-md transition-colors cursor-pointer ${
+            activeMetric === "ratio"
+              ? "bg-amber-600/80 text-white"
+              : "text-slate-400 hover:text-slate-300"
+          }`}
+        >
+          Por Razão
+        </button>
+      </div>
+
+      {/* Entity toggle: States / Cities */}
       {showStatesTab && (
         <div className="flex gap-1 mb-4 bg-slate-800/50 rounded-lg p-1">
           <button
@@ -98,8 +125,14 @@ export function TopRankings({
         <div className="flex items-center text-xs text-slate-500 pb-2 border-b border-slate-800">
           <span className="w-6 text-right mr-2">#</span>
           <span className="flex-1">Nome</span>
-          <span className="w-20 text-right">BF</span>
-          <span className="w-20 text-right">Trab.</span>
+          {activeMetric === "count" ? (
+            <>
+              <span className="w-20 text-right">BF</span>
+              <span className="w-20 text-right">Trab.</span>
+            </>
+          ) : (
+            <span className="w-32 text-right">Razão (BF/Trab.)</span>
+          )}
         </div>
 
         {effectiveTab === "states" ? (
@@ -115,12 +148,20 @@ export function TopRankings({
                 <span className="flex-1 text-slate-300 truncate">
                   {state.abbreviation} — {state.name}
                 </span>
-                <span className="w-20 text-right text-amber-400 tabular-nums text-xs">
-                  {formatNumber(state.bolsaFamiliaRecipients)}
-                </span>
-                <span className="w-20 text-right text-blue-400 tabular-nums text-xs">
-                  {formatNumber(state.formalWorkers)}
-                </span>
+                {activeMetric === "count" ? (
+                  <>
+                    <span className="w-20 text-right text-amber-400 tabular-nums text-xs">
+                      {formatNumber(state.bolsaFamiliaRecipients)}
+                    </span>
+                    <span className="w-20 text-right text-blue-400 tabular-nums text-xs">
+                      {formatNumber(state.formalWorkers)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="w-32 text-right text-orange-400 tabular-nums text-xs">
+                    {formatRatio(state.bolsaFamiliaRecipients, state.formalWorkers)}
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -137,12 +178,20 @@ export function TopRankings({
                 <span className="flex-1 text-slate-300 truncate">
                   {city.name}
                 </span>
-                <span className="w-20 text-right text-amber-400 tabular-nums text-xs">
-                  {formatNumber(city.bolsaFamiliaRecipients)}
-                </span>
-                <span className="w-20 text-right text-blue-400 tabular-nums text-xs">
-                  {formatNumber(city.formalWorkers)}
-                </span>
+                {activeMetric === "count" ? (
+                  <>
+                    <span className="w-20 text-right text-amber-400 tabular-nums text-xs">
+                      {formatNumber(city.bolsaFamiliaRecipients)}
+                    </span>
+                    <span className="w-20 text-right text-blue-400 tabular-nums text-xs">
+                      {formatNumber(city.formalWorkers)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="w-32 text-right text-orange-400 tabular-nums text-xs">
+                    {formatRatio(city.bolsaFamiliaRecipients, city.formalWorkers)}
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -156,6 +205,12 @@ function formatNumber(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k`;
   return n.toLocaleString("pt-BR");
+}
+
+function formatRatio(recipients: number, workers: number): string {
+  if (workers === 0) return "—";
+  const ratio = recipients / workers;
+  return `${ratio.toFixed(2)} BF/trab.`;
 }
 
 function capitalize(s: string): string {
